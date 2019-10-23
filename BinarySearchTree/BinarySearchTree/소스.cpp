@@ -10,153 +10,167 @@ typedef struct Node {
 
 Node* root = NULL;
 
-Node* makeNewNode(int data) {
-	Node* newNode = (struct Node*) malloc(sizeof(struct Node));
-	newNode->key = data;
+Node* getNode(int data) {
+	Node* newNode = (struct Node*)malloc(sizeof(struct Node));
 	newNode->left = NULL;
 	newNode->right = NULL;
 	newNode->parent = NULL;
+	newNode->key = data;
 	return newNode;
-
 }
-bool isExternal(Node* node) {
-	if(node==NULL){
-		return true;
-	}
-	else{
-		return false;
-	}
-}
-
 Node* treeSearch(Node* node, int data) {
 	Node* childNode = NULL;
 	if (node->key == data) {
 		return node;
 	}
-	else if (node->key < data && !isExternal(node->right)) {
+	else if (node->right != NULL && node->key < data) {
 		childNode = treeSearch(node->right, data);
 	}
-	else if (node->key > data && !isExternal(node->left)) {
+	else if (node->left != NULL & node->key > data) {
 		childNode = treeSearch(node->left, data);
 	}
 	if (childNode != NULL) {
 		childNode->parent = node;
 	}
 	return childNode;
+
 }
-
-
-
 Node* insertItem(Node* node, int data) {
-	
 	if (node == NULL) {
-		node = makeNewNode(data);
-		return node;
+		Node* newNode = getNode(data);
+		return newNode;
 	}
-	if (data < node->key) {
-		node->left=insertItem(node->left, data);
+	if (node->key > data) {
+		node->left = insertItem(node->left, data);
 	}
-	else if (data > node->key)
-	{
-		node->right=insertItem(node->right, data);
+	else if (node->key < data) {
+		node->right = insertItem(node->right, data);
 	}
 	return node;
-	
 }
-void findElement(int data) {
-	Node* node=treeSearch(root, data);
-	if (node == NULL) {
-		printf("X \n");
+
+void preorder(Node* node) {
+	if (node != NULL) {
+		printf(" %d", node->key);
+		preorder(node->left);
+		preorder(node->right);
 	}
-	else if (node->key == data) {
-		printf("%d \n", node->key);
-	}
-	
-	
 }
-Node* inOrderSucc(Node* node) {
-	Node* w = node->right;
+
+int findElement(Node* node, int data) {
+	Node* w = treeSearch(node, data);
+	if (w == NULL) {
+		printf("X\n");
+		return;
+	}
+	if (w->key != data) {
+		printf("X\n");
+	}
+	else if (w->key == data) {
+		printf("%d\n", data);
+		return w->key;
+	}
+
+}
+Node* sibling(Node* w) {
+	if (w->parent->left == w) {
+		return w->parent->right;
+	}
+	else if (w->parent->right == w) {
+		return w->parent->left;
+	}
+}
+Node* reduceExternal(Node* z) {
+	Node* w = z->parent;
+	Node* zs = sibling(z);
+	if (w->key == root->key) {
+		root = zs;
+		zs->parent = NULL;
+	}
+	else {
+		Node* g = w->parent;
+		zs->parent = g;
+		if (w == g->left) {
+			g->left = zs;
+		}
+		else if (w == g->right) {
+			g->right = zs;
+		}
+	}
+	free(z);
+	free(w);
+	return zs;
+
+}
+Node* inOrderSucc(Node* w) {
+	w = w->right;
 	while (w->left != NULL) {
 		w = w->left;
 	}
 	return w;
 }
+Node* removeElement(Node* node, int data) {
+	Node* tNode = NULL;
+	if (node == NULL) {
+		printf("X\n");
+		return NULL;
+	}
 
-void removeElement(int data) {
-	Node* node = treeSearch(root, data);
-	if(node == NULL) {
-		printf("X \n");
-	}
-	if (node->key == data && isExternal(node->left) && isExternal(node->right)) {
-		printf("%d", node->key);
-		free(node);
-	}
-	else if (node->key == data &&!isExternal(node->right)) {
-		printf("%d", node->key);
-		Node* succ;
-		Node* tmp;
-		succ=inOrderSucc(node);
-		tmp->parent = node->parent;
-		node->parent = succ->parent;
-		succ->parent = tmp->parent;
-		succ->right = node->right;
-		
-		free(node);
-	}
-	else if (node->key == data && !isExternal(node->left)) {
-		printf("%d", node->key);
-		
-		node->left->parent = node->parent;
-		node->parent->left = node->left;
-		free(node);
-	}
-	else if (node->key==data&&!isExternal(node->right)&&isExternal(node->left)){
-		printf("%d", node->key);
+	if (node->key > data)
+		node->left = removeElement(node->left, data);
+	else if (node->key < data)
+		node->right = removeElement(node->right, data);
+	else
+	{
+		// 자식 노드가 둘 다 있을 경우
+		if (node->right != NULL && node->left != NULL)
+		{
+			tNode = inOrderSucc(node);
+			printf("%d\n", node->key);
+			node->key = tNode->key;
+			node->right = removeElement(node->right, tNode->key);
+		}
+		else
+		{
+			tNode = (node->left == NULL) ? node->right : node->left;
 
-		free(node);
+			free(node);
+			return tNode;
+		}
 	}
-	
+
+	return node;
 
 }
-void preorder(Node* root) {
-	if (root != NULL) {
-		printf("%d \n", root->key);
-		preorder(root->left);
-		preorder(root->right);
-	}
-}
-int main() {
-
-
+int main()
+{
 	char input = 'o';
-	
 
 	while (input != 'q') {
-		int value = 0;
-		scanf_s("%c", &input);
-
-
+		scanf("%c", &input);
+		int data = 0;
 		if (input == 'i') {
-			scanf_s("%d", &value);
+			scanf("%d", &data);
 			if (root == NULL) {
-				root = insertItem(root, value);
+				root = insertItem(root, data);
 			}
-			insertItem(root,value);
-			//printf("%d\n",0);
+			insertItem(root, data);
 		}
 		else if (input == 'd') {
-			//printf("%d\n",removeMax());
+			scanf("%d", &data);
+			removeElement(root, data);
+
+		}
+		else if (input == 's') {
+			scanf("%d", &data);
+			findElement(root, data);
 		}
 		else if (input == 'p') {
 			preorder(root);
-		}
-		else if (input == 's') {
-			scanf_s("%d", &value);
-			findElement(value);
+			printf("\n");
 		}
 		getchar();
 	}
 
 	return 0;
 }
-
